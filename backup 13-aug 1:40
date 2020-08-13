@@ -20,8 +20,6 @@ class Controller(MDBottomNavigation):
     lbl_word = ObjectProperty()
     meaning_box = ObjectProperty()
 
-    # printing is still not great, what I can do is
-
     def print_meaning(self, in_word):
 
         set_m(in_word)
@@ -30,7 +28,7 @@ class Controller(MDBottomNavigation):
         for key in w_dic.keys():
 
             lbl_word = MDLabel(text=key.capitalize() + ':', font_style="H6", size_hint_y=None,
-                               text_size={self.width, None}, size=self.texture_size)
+                               text_size={self.width, None})
             self.meaning_box.add_widget(lbl_word)
 
             for k in w_dic[key].keys():
@@ -108,34 +106,12 @@ def save_meaning(w_dic):
             wordie_dbu.insert({'word': key.capitalize(), 'meaning': str(w_dic[key][k])})
 
 
-MAIN root.py
 root_kv = """
 <ScrollableCard@ScrollView>:
-
-    MDLabel:
-        id: lbl_word
-        font_style: "H6"
-        size_hint_y: None
-        text_size= self.width, None
-        size=self.texture_size
-    MDLabel:
-        id: lbl_type
-        font_style: "Body1"
-        size_hint_y: None
-        text_size= self.width, None
-        size=self.texture_size
-        
-    MDLabel:
-        id: lbl_meaning
-        font_style: "Body1"
-        size_hint_y: None
-        text_size= self.width, None
-        size=self.texture_size
-        
-            
+    #empty
 <Controller>:
     #empty
-    
+
 BoxLayout:
     orientation: "vertical"
 
@@ -155,41 +131,32 @@ BoxLayout:
             text: "Word"
             icon: "card-text"
 
-            BoxLayout:
-                orientation: "vertical"
-                size_hint_y: None
-                height: self.minimum_height
-                spacing: dp(10)
-                pos_hint: {"center_x": .5, "center_y": .5}
+            
+            MDTextField:
+                id: tf_word
+                hint_text: "Enter Word"
+                pos_hint: {'center_x':0.5,'center_y':0.6}
 
-                MDTextField:
-                    id: tf_word
-                    hint_text: "Enter Word"
-                    pos_hint: {'center_x':0.5,'center_y':0.6}
-
-                MDRectangleFlatButton
-                    id: btn_search
-                    text: "Search"
-                    pos_hint: {'center_x':0.5,'center_y':0.4}
-                    halign: "center"
-                    on_release:
-                        panel.print_meaning(tf_word.text)
-                        panel.switch_tab("files2")
+            MDRectangleFlatButton
+                id: btn_search
+                text: "Search"
+                pos_hint: {'center_x':0.5,'center_y':0.4}
+                halign: "center"
+                on_release:
+                    panel.print_meaning(tf_word.text)
+                    panel.switch_tab("files2")
 
         MDBottomNavigationItem:
             name: "files2"
             text: "Meaning"
             icon: "clipboard-text"
 
-            MDBoxLayout:
-                orientation: "vertical"                                             
-                
-                ScrollableCard:
-                    id: sc
-                    
-                    MDList:
-                        id: meaning_box
-                                                    
+            ScrollableCard:
+                id: sc
+
+                MDList:
+                    id: meaning_box
+
         MDBottomNavigationItem:
             name: "files3"
             text: "JS"
@@ -202,7 +169,4 @@ BoxLayout:
                 halign: "center"
 
 """
-
-
-
 
