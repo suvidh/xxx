@@ -1,0 +1,208 @@
+import gspread_db
+from main_root_kv import root_kv
+from PyDictionary import PyDictionary
+from google.oauth2.service_account import Credentials
+from kivy.lang import Builder
+from kivy.uix.scrollview import ScrollView
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.app import MDApp
+from kivymd.uix.label import MDLabel
+from kivy.properties import ObjectProperty, StringProperty
+from kivymd.uix.bottomnavigation import MDBottomNavigation
+from kivymd.uix.list import MDList
+from kivymd.uix.card import MDCard, MDSeparator
+from kivymd.uix.button import MDRectangleFlatButton
+from database import *
+
+
+class Controller(MDBottomNavigation):
+    tf_word = ObjectProperty()
+    lbl_word = ObjectProperty()
+    meaning_box = ObjectProperty()
+
+    # printing is still not great, what I can do is
+
+    def print_meaning(self, in_word):
+
+        set_m(in_word)
+        w_dic = get(in_word)
+
+        for key in w_dic.keys():
+
+            lbl_word = MDLabel(text=key.capitalize() + ':', font_style="H6", size_hint_y=None,
+                               text_size={self.width, None}, size=self.texture_size)
+            self.meaning_box.add_widget(lbl_word)
+
+            for k in w_dic[key].keys():
+                lbl_type = MDLabel(text=k + ':', font_style="Body1", size_hint_y=None, text_size={self.width, None})
+                self.meaning_box.add_widget(lbl_type)
+
+                lbl_meaning = MDLabel(text=str(w_dic[key][k]).strip("[]"), font_style="Body1", size_hint_y=None,
+                                      text_size={self.width, None})
+                self.meaning_box.add_widget(lbl_meaning)
+
+        btn_save = MDRectangleFlatButton(text="Save", halign="center")
+        btn_save.bind(on_press=lambda x: save_meaning(w_dic))
+        self.meaning_box.add_widget(btn_save)
+
+
+class ScrollableCard(ScrollView):
+    text = StringProperty('')
+
+
+class MainApp(MDApp):
+    def __init__(self, **kwargs):
+        self.title = "wordie"
+        super().__init__(**kwargs)
+
+    def build(self):
+        self.root = Builder.load_string(root_kv)
+
+
+if __name__ == "__main__":
+    MainApp().run()
+
+DATABASE.PY
+from PyDictionary import PyDictionary
+import gspread_db
+from google.oauth2.service_account import Credentials
+data = {}
+
+
+def set_m(in_word):
+    # data = {in_word: {}}
+    dictionary = PyDictionary(in_word)
+    w_dic = dictionary.getMeanings()
+    data[in_word] = w_dic
+
+
+def get(in_word):
+    if in_word in data.keys():
+        return data[in_word]
+    else:
+        return None
+
+
+def save_meaning(w_dic):
+    scopes = [
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/drive'
+    ]
+
+    credentials = Credentials.from_service_account_file(
+        'wordie-credentials.json',
+        scopes=scopes
+    )
+    client = gspread_db.authorize(credentials)
+    db = client.open("wordie")
+    if db.table_exists(table_name="wordie_db"):
+        print("Yes it exists")
+        wordie_dbu = db['wordie_db']
+    else:
+        print("It does not exist")
+        db.create_table(table_name='wordie_db', header=['word', 'meaning'])
+        wordie_dbu = db['wordie_db']
+
+    for key in w_dic.keys():
+        for k in w_dic[key].keys():
+            wordie_dbu.insert({'word': key.capitalize(), 'meaning': str(w_dic[key][k])})
+
+
+MAIN root.py
+root_kv = """
+<ScrollableCard@ScrollView>:
+
+    MDLabel:
+        id: lbl_word
+        font_style: "H6"
+        size_hint_y: None
+        text_size= self.width, None
+        size=self.texture_size
+    MDLabel:
+        id: lbl_type
+        font_style: "Body1"
+        size_hint_y: None
+        text_size= self.width, None
+        size=self.texture_size
+        
+    MDLabel:
+        id: lbl_meaning
+        font_style: "Body1"
+        size_hint_y: None
+        text_size= self.width, None
+        size=self.texture_size
+        
+            
+<Controller>:
+    #empty
+    
+BoxLayout:
+    orientation: "vertical"
+
+    MDToolbar:
+        id: toolbar
+        title: "Wordie"
+        md_bg_color: app.theme_cls.primary_color
+
+
+    Controller:
+        id: panel
+        tf_word: tf_word
+        meaning_box:meaning_box
+
+        MDBottomNavigationItem:
+            name: "files1"
+            text: "Word"
+            icon: "card-text"
+
+            BoxLayout:
+                orientation: "vertical"
+                size_hint_y: None
+                height: self.minimum_height
+                spacing: dp(10)
+                pos_hint: {"center_x": .5, "center_y": .5}
+
+                MDTextField:
+                    id: tf_word
+                    hint_text: "Enter Word"
+                    pos_hint: {'center_x':0.5,'center_y':0.6}
+
+                MDRectangleFlatButton
+                    id: btn_search
+                    text: "Search"
+                    pos_hint: {'center_x':0.5,'center_y':0.4}
+                    halign: "center"
+                    on_release:
+                        panel.print_meaning(tf_word.text)
+                        panel.switch_tab("files2")
+
+        MDBottomNavigationItem:
+            name: "files2"
+            text: "Meaning"
+            icon: "clipboard-text"
+
+            MDBoxLayout:
+                orientation: "vertical"                                             
+                
+                ScrollableCard:
+                    id: sc
+                    
+                    MDList:
+                        id: meaning_box
+                                                    
+        MDBottomNavigationItem:
+            name: "files3"
+            text: "JS"
+            icon: "language-javascript"
+
+            MDLabel:
+                font_style: "Body1"
+                theme_text_color: "Primary"
+                text: "Oh god JS again"
+                halign: "center"
+
+"""
+
+
+
+
